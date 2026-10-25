@@ -1,0 +1,19 @@
+{
+ email {$ACME_EMAIL}
+}
+{$PLAY_HOST} {
+ encode zstd gzip
+ header {
+  X-Content-Type-Options nosniff
+  Referrer-Policy same-origin
+  X-Frame-Options DENY
+ }
+ reverse_proxy play:3000
+}
+{$WIKI_HOST} {
+ encode zstd gzip
+ reverse_proxy wiki:3000
+}
+{$AUTH_HOST} {
+ reverse_proxy keycloak:8080
+}

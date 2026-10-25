@@ -1,0 +1,26 @@
+{
+  "name": "wikitop",
+  "private": true,
+  "packageManager": "pnpm@10.6.5",
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm --filter @wikitop/shared build && pnpm --filter @wikitop/web build && pnpm --filter @wikitop/server build",
+    "build:portable": "pnpm --filter @wikitop/shared build && pnpm --filter @wikitop/web build:portable",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:portable": "playwright test --config playwright.portable.config.ts",
+    "db:migrate": "pnpm --filter @wikitop/server db:migrate",
+    "seed": "pnpm --filter @wikitop/server seed",
+    "wiki:check": "pnpm --filter @wikitop/server wiki:check",
+    "migrate:coordinates": "pnpm --filter @wikitop/server migrate:coordinates"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.51.1",
+    "@types/node": "22.13.10",
+    "prettier": "3.5.3",
+    "socket.io-client": "4.8.1",
+    "typescript": "5.8.2",
+    "vitest": "3.0.8"
+  }
+}

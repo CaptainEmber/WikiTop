@@ -1,0 +1,24 @@
+services:
+  play-db:
+    ports: [127.0.0.1:5432:5432]
+  wiki:
+    ports: [127.0.0.1:3001:3000]
+  keycloak:
+    command: [start-dev, --import-realm]
+    ports: [127.0.0.1:8080:8080]
+    environment:
+      KC_HOSTNAME: http://localhost:8080
+      PLAY_ORIGIN: http://localhost:3000
+      WIKI_ORIGIN: http://localhost:3001
+  storage:
+    ports: [127.0.0.1:9000:9000]
+  play:
+    ports: [127.0.0.1:3000:3000]
+    environment:
+      NODE_ENV: development
+      APP_URL: http://localhost:3000
+      WIKI_URL: http://localhost:3001
+      OIDC_ISSUER: http://localhost:8080/realms/wikitop
+      OIDC_INTERNAL_URL: http://keycloak:8080/realms/wikitop
+  caddy:
+    profiles: [hosted]

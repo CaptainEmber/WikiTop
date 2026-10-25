@@ -1,0 +1,31 @@
+{
+  "name": "@wikitop/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "dev:portable": "vite --host 0.0.0.0 --open /portable.html",
+    "build": "tsc --noEmit && vite build",
+    "build:portable": "tsc --noEmit && vite build --config vite.portable.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@wikitop/shared": "workspace:*",
+    "@react-three/drei": "9.122.0",
+    "@react-three/fiber": "8.18.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-markdown": "9.0.3",
+    "socket.io-client": "4.8.1",
+    "three": "0.173.0",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "@types/three": "0.173.0",
+    "@vitejs/plugin-react": "4.3.4",
+    "vite": "6.2.2"
+  }
+}
