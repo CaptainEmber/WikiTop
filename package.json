@@ -1,25 +1,25 @@
 {
   "name": "wikitop",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.6.5",
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/*' dev",
-    "build": "pnpm --filter @wikitop/shared build && pnpm --filter @wikitop/web build && pnpm --filter @wikitop/server build",
-    "build:portable": "pnpm --filter @wikitop/shared build && pnpm --filter @wikitop/web build:portable",
+    "dev": "pnpm --filter @wikitop/app dev",
+    "build": "pnpm catalog && pnpm --filter @wikitop/thing-format build && pnpm --filter @wikitop/app build",
+    "preview": "pnpm --filter @wikitop/app preview",
+    "catalog": "tsx tools/catalog.ts",
+    "validate": "tsx tools/validate-world.ts",
+    "diff:things": "tsx tools/semantic-diff.ts",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "test:portable": "playwright test --config playwright.portable.config.ts",
-    "db:migrate": "pnpm --filter @wikitop/server db:migrate",
-    "seed": "pnpm --filter @wikitop/server seed",
-    "wiki:check": "pnpm --filter @wikitop/server wiki:check",
-    "migrate:coordinates": "pnpm --filter @wikitop/server migrate:coordinates"
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@wikitop/thing-format": "workspace:*",
     "@playwright/test": "1.51.1",
     "@types/node": "22.13.10",
     "prettier": "3.5.3",
-    "socket.io-client": "4.8.1",
+    "tsx": "4.19.3",
     "typescript": "5.8.2",
     "vitest": "3.0.8"
   }

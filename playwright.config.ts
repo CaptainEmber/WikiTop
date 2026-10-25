@@ -16,17 +16,10 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: "pnpm build && pnpm --filter @wikitop/server start",
+        command: "pnpm build && pnpm --filter @wikitop/app preview --host 127.0.0.1 --port 3100",
         port,
         reuseExistingServer: false,
-        env: {
-          NODE_ENV: "test",
-          DEV_AUTH: "true",
-          WIKI_MODE: "memory",
-          APP_URL: `http://127.0.0.1:${port}`,
-          PORT: String(port),
-          DATABASE_URL: "",
-        },
+        env: { NODE_ENV: "test" },
       },
   reporter: "list",
 });

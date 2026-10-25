@@ -1,5 +1,7 @@
 node_modules/
 dist/
+app/public/catalog.json
+app/public/world/
 .env
 .env.*
 !.env.example
