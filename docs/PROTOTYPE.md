@@ -34,6 +34,8 @@ Copyrighted adventure sources belong under `adventures/<slug>/source/`; normaliz
 
 The public `world/srd/` library contains only reusable SRD-attributed creature templates and original WikiTop tokens. Private adventure packs may link to those public templates. In Live Play, the host can right-click-move placed Things and track resources, conditions, or temporary visibility. Those instance overlays expire with the room.
 
+The larger `world/srd-5.2/` library is generated from a local copy of SRD 5.2.1. It contains separate, linkable Things for every parsed monster and for mundane weapons, armor, tools, adventuring gear, mounts, and vehicles. Source PDFs belong in the ignored `sources/srd-5.2.1/` directory. Regenerate with `pnpm generate:srd52`; the committed GLBs carry CC BY 4.0 attribution in `world/srd-5.2/LICENSE.md`. The five monster-list printouts are retained only as local reference material—the generator takes rules content from the SRD PDF itself.
+
 The public `world/planes/` collection begins at `planar-system` and links through the Material Plane, its Feywild and Shadowfell echoes, Inner and Outer Plane indexes, and the Astral and Ethereal transitive planes. Plane entries intentionally use concise original summaries and name-only map labels so contributors can extend them with their own realms and artwork.
 
 ## Live play service

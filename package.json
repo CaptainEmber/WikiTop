@@ -9,6 +9,7 @@
     "preview": "pnpm --filter @wikitop/app preview",
     "catalog": "tsx tools/catalog.ts",
     "generate:srd": "tsx tools/generate-srd.ts",
+    "generate:srd52": "tsx tools/generate-srd52-library.ts",
     "generate:planes": "tsx tools/generate-planes.ts",
     "generate:adventure": "tsx tools/generate-adventure.ts",
     "validate": "tsx tools/validate-world.ts",

@@ -13,4 +13,5 @@ adventures/*/source/
 adventures/*/manifest/
 adventures/*/generated/
 services/room-worker/.wrangler/
+sources/srd-5.2.1/*.pdf
 
