@@ -1,23 +1,311 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PlayServerMessageSchema, THING_CHUNK_BYTES, type CharacterSummary, type PlayCommand, type PlayRoomSnapshot, type PlayServerMessage, type WorldRevision } from "@wikitop/play-protocol";
+import {
+  PlayServerMessageSchema,
+  THING_CHUNK_BYTES,
+  type CharacterSummary,
+  type PlayCommand,
+  type PlayRoomSnapshot,
+  type PlayServerMessage,
+  type WorldRevision,
+} from "@wikitop/play-protocol";
 
-export type ConnectionState="connecting"|"live"|"reconnecting"|"expired"|"unavailable";
-export interface CreateRoomInput { location:{thingId:string;source:"published"|"host-local"};world:WorldRevision;host:{id:string;name:string;character:CharacterSummary} }
-export interface RoomCredentials {roomId:string;inviteSecret:string;participantId:string;reconnectSecret:string;snapshot:PlayRoomSnapshot}
-const service=()=>String(import.meta.env.VITE_PLAY_URL??"").replace(/\/$/,"");
-export async function createRoom(input:CreateRoomInput):Promise<RoomCredentials>{if(!service())throw new Error("Live play service is not configured");const r=await fetch(`${service()}/rooms`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(input)});if(!r.ok)throw new Error((await r.json().catch(()=>null))?.error??`Could not create room (${r.status})`);return r.json();}
-const socketUrl=(roomId:string,participantId:string,name:string,character:CharacterSummary)=>{const url=new URL(`${service()}/rooms/${roomId}/connect`);url.protocol=url.protocol==="https:"?"wss:":"ws:";url.searchParams.set("participantId",participantId);url.searchParams.set("name",name);url.searchParams.set("character",JSON.stringify(character));return url.toString();};
-const bytesToBase64=(bytes:Uint8Array)=>{let value="";for(let i=0;i<bytes.length;i+=0x8000)value+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(value);};
-const base64ToBytes=(value:string)=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
-const sha256=async(bytes:Uint8Array)=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))].map(x=>x.toString(16).padStart(2,"0")).join("");
+export type ConnectionState =
+  | "connecting"
+  | "live"
+  | "reconnecting"
+  | "expired"
+  | "unavailable";
+export interface CreateRoomInput {
+  location: { thingId: string; source: "published" | "host-local" };
+  world: WorldRevision;
+  host: { id: string; name: string; character: CharacterSummary };
+}
+export interface RoomCredentials {
+  roomId: string;
+  inviteSecret: string;
+  participantId: string;
+  reconnectSecret: string;
+  snapshot: PlayRoomSnapshot;
+}
+const service = () =>
+  String(import.meta.env.VITE_PLAY_URL ?? "").replace(/\/$/, "");
+export async function createRoom(
+  input: CreateRoomInput,
+): Promise<RoomCredentials> {
+  if (!service()) throw new Error("Live play service is not configured");
+  const r = await fetch(`${service()}/rooms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!r.ok)
+    throw new Error(
+      (await r.json().catch(() => null))?.error ??
+        `Could not create room (${r.status})`,
+    );
+  return r.json();
+}
+const socketUrl = (
+  roomId: string,
+  participantId: string,
+  name: string,
+  character: CharacterSummary,
+) => {
+  const url = new URL(`${service()}/rooms/${roomId}/connect`);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.searchParams.set("participantId", participantId);
+  url.searchParams.set("name", name);
+  url.searchParams.set("character", JSON.stringify(character));
+  return url.toString();
+};
+const bytesToBase64 = (bytes: Uint8Array) => {
+  let value = "";
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    value += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(value);
+};
+const base64ToBytes = (value: string) =>
+  Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
+const sha256 = async (bytes: Uint8Array) =>
+  [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("");
 
-export function usePlayRoom(options:{roomId:string;credential:string;participantId:string;name:string;character:CharacterSummary;onThingRequest:(thingId:string)=>Promise<ArrayBuffer|undefined>}){
-  const[snapshot,setSnapshot]=useState<PlayRoomSnapshot>();const[participantId,setParticipantId]=useState(options.participantId);const[state,setState]=useState<ConnectionState>("connecting");const[error,setError]=useState("");const[cursors,setCursors]=useState<Record<string,{thingId:string;position:[number,number];color:string}>>({});const ws=useRef<WebSocket>();const latest=useRef(options);latest.current=options;const credentialRef=useRef(options.credential),participantRef=useRef(options.participantId);const snapshotRef=useRef(snapshot);snapshotRef.current=snapshot;const chunks=useRef(new Map<string,{thingId:string;ownerId:string;total:number;byteLength:number;sha256:string;parts:Uint8Array[]}>());const receivers=useRef(new Map<string,(value:ArrayBuffer)=>void>());const attempts=useRef(0);const closed=useRef(false);
-  const rawSend=useCallback((command:PlayCommand)=>{if(ws.current?.readyState!==WebSocket.OPEN){setError("Room connection is not live");return false;}ws.current.send(JSON.stringify(command));return true;},[]);
-  const command=useCallback((value:any)=>rawSend({...value,operationId:`op_${crypto.randomUUID()}`,revision:snapshotRef.current?.revision??0}),[rawSend]);
-  const sendThing=useCallback(async(requestId:string,targetId:string,thingId:string,bytes:ArrayBuffer)=>{const data=new Uint8Array(bytes),digest=await sha256(data),total=Math.ceil(data.length/THING_CHUNK_BYTES);for(let index=0;index<total;index++){const part=data.subarray(index*THING_CHUNK_BYTES,Math.min(data.length,(index+1)*THING_CHUNK_BYTES));rawSend({type:"thing-chunk",requestId,targetId,thingId,index,total,byteLength:data.length,sha256:digest,data:bytesToBase64(part)});}},[rawSend]);
-  const receive=useCallback(async(message:PlayServerMessage)=>{if(message.type==="welcome"){credentialRef.current=message.reconnectSecret;participantRef.current=message.participantId;setParticipantId(message.participantId);setSnapshot(message.snapshot);localStorage.setItem(`wikitop-room:${options.roomId}`,JSON.stringify({participantId:message.participantId,reconnectSecret:message.reconnectSecret,characterId:latest.current.character.id,name:latest.current.name}));setState("live");attempts.current=0;}else if(message.type==="snapshot"){setSnapshot(message.snapshot);setState("live");}else if(message.type==="error"){setError(message.message);if(message.code==="room-expired")setState("expired");}else if(message.type==="cursor"){setCursors(v=>({...v,[message.participantId]:{thingId:message.thingId,position:message.position,color:message.color}}));}else if(message.type==="thing-request"){const bytes=await latest.current.onThingRequest(message.thingId);if(bytes)await sendThing(message.requestId,message.requesterId,message.thingId,bytes);}else if(message.type==="thing-chunk"){const key=message.requestId;let item=chunks.current.get(key);if(!item){item={thingId:message.thingId,ownerId:message.ownerId,total:message.total,byteLength:message.byteLength,sha256:message.sha256,parts:Array(message.total)};chunks.current.set(key,item);}item.parts[message.index]=base64ToBytes(message.data);if(item.parts.filter(Boolean).length===item.total){const all=new Uint8Array(item.byteLength);let at=0;for(const part of item.parts){all.set(part,at);at+=part.length;}chunks.current.delete(key);if(await sha256(all)!==item.sha256){setError("Shared Thing failed its integrity check");return;}receivers.current.get(key)?.(all.buffer);receivers.current.delete(key);}}},[options.roomId,sendThing]);
-  useEffect(()=>{closed.current=false;let timer:number;const connect=()=>{setState(attempts.current?"reconnecting":"connecting");const current=latest.current,socket=new WebSocket(socketUrl(current.roomId,participantRef.current,current.name,current.character),[`wikitop.${credentialRef.current}`]);ws.current=socket;socket.onmessage=e=>{try{const parsed=PlayServerMessageSchema.parse(JSON.parse(e.data));void receive(parsed);}catch{setError("Room sent an invalid update");}};socket.onclose=e=>{if(closed.current)return;if(e.code===1001){setState("expired");return;}setState("reconnecting");timer=window.setTimeout(connect,Math.min(10000,500*2**attempts.current++));};socket.onerror=()=>setState("unavailable");};connect();return()=>{closed.current=true;clearTimeout(timer);ws.current?.close();};},[options.roomId]);
-  const requestThing=useCallback((ownerId:string,thingId:string)=>new Promise<ArrayBuffer>((resolve,reject)=>{const requestId=`request_${crypto.randomUUID()}`;receivers.current.set(requestId,resolve);if(!rawSend({type:"thing-request",requestId,ownerId,thingId})){receivers.current.delete(requestId);reject(new Error("Room is offline"));return;}window.setTimeout(()=>{if(receivers.current.delete(requestId))reject(new Error("Thing source did not respond"));},15000);}),[rawSend]);
-  return{snapshot,participantId,state,error,setError,cursors,command,rawSend,requestThing};
+export function usePlayRoom(options: {
+  roomId: string;
+  credential: string;
+  participantId: string;
+  name: string;
+  character: CharacterSummary;
+  onThingRequest: (thingId: string) => Promise<ArrayBuffer | undefined>;
+}) {
+  const [snapshot, setSnapshot] = useState<PlayRoomSnapshot>();
+  const [participantId, setParticipantId] = useState(options.participantId);
+  const [state, setState] = useState<ConnectionState>("connecting");
+  const [error, setError] = useState("");
+  const [cursors, setCursors] = useState<
+    Record<
+      string,
+      { thingId: string; position: [number, number]; color: string }
+    >
+  >({});
+  const ws = useRef<WebSocket>();
+  const latest = useRef(options);
+  latest.current = options;
+  const credentialRef = useRef(options.credential),
+    participantRef = useRef(options.participantId);
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
+  const chunks = useRef(
+    new Map<
+      string,
+      {
+        thingId: string;
+        ownerId: string;
+        total: number;
+        byteLength: number;
+        sha256: string;
+        parts: Uint8Array[];
+      }
+    >(),
+  );
+  const receivers = useRef(new Map<string, (value: ArrayBuffer) => void>());
+  const attempts = useRef(0);
+  const closed = useRef(false);
+  const rawSend = useCallback((command: PlayCommand) => {
+    if (ws.current?.readyState !== WebSocket.OPEN) {
+      setError("Room connection is not live");
+      return false;
+    }
+    ws.current.send(JSON.stringify(command));
+    return true;
+  }, []);
+  const command = useCallback(
+    (value: any) =>
+      rawSend({
+        ...value,
+        operationId: `op_${crypto.randomUUID()}`,
+        revision: snapshotRef.current?.revision ?? 0,
+      }),
+    [rawSend],
+  );
+  const sendThing = useCallback(
+    async (
+      requestId: string,
+      targetId: string,
+      thingId: string,
+      bytes: ArrayBuffer,
+    ) => {
+      const data = new Uint8Array(bytes),
+        digest = await sha256(data),
+        total = Math.ceil(data.length / THING_CHUNK_BYTES);
+      for (let index = 0; index < total; index++) {
+        const part = data.subarray(
+          index * THING_CHUNK_BYTES,
+          Math.min(data.length, (index + 1) * THING_CHUNK_BYTES),
+        );
+        rawSend({
+          type: "thing-chunk",
+          requestId,
+          targetId,
+          thingId,
+          index,
+          total,
+          byteLength: data.length,
+          sha256: digest,
+          data: bytesToBase64(part),
+        });
+      }
+    },
+    [rawSend],
+  );
+  const receive = useCallback(
+    async (message: PlayServerMessage) => {
+      if (message.type === "welcome") {
+        credentialRef.current = message.reconnectSecret;
+        participantRef.current = message.participantId;
+        setParticipantId(message.participantId);
+        setSnapshot(message.snapshot);
+        localStorage.setItem(
+          `wikitop-room:${options.roomId}`,
+          JSON.stringify({
+            participantId: message.participantId,
+            reconnectSecret: message.reconnectSecret,
+            characterId: latest.current.character.id,
+            name: latest.current.name,
+          }),
+        );
+        setState("live");
+        attempts.current = 0;
+      } else if (message.type === "snapshot") {
+        setSnapshot(message.snapshot);
+        setState("live");
+      } else if (message.type === "error") {
+        setError(message.message);
+        if (message.code === "room-expired") setState("expired");
+      } else if (message.type === "cursor") {
+        setCursors((v) => ({
+          ...v,
+          [message.participantId]: {
+            thingId: message.thingId,
+            position: message.position,
+            color: message.color,
+          },
+        }));
+      } else if (message.type === "thing-request") {
+        const bytes = await latest.current.onThingRequest(message.thingId);
+        if (bytes)
+          await sendThing(
+            message.requestId,
+            message.requesterId,
+            message.thingId,
+            bytes,
+          );
+      } else if (message.type === "thing-chunk") {
+        const key = message.requestId;
+        let item = chunks.current.get(key);
+        if (!item) {
+          item = {
+            thingId: message.thingId,
+            ownerId: message.ownerId,
+            total: message.total,
+            byteLength: message.byteLength,
+            sha256: message.sha256,
+            parts: Array(message.total),
+          };
+          chunks.current.set(key, item);
+        }
+        item.parts[message.index] = base64ToBytes(message.data);
+        if (item.parts.filter(Boolean).length === item.total) {
+          const all = new Uint8Array(item.byteLength);
+          let at = 0;
+          for (const part of item.parts) {
+            all.set(part, at);
+            at += part.length;
+          }
+          chunks.current.delete(key);
+          if ((await sha256(all)) !== item.sha256) {
+            setError("Shared Thing failed its integrity check");
+            return;
+          }
+          receivers.current.get(key)?.(all.buffer);
+          receivers.current.delete(key);
+        }
+      }
+    },
+    [options.roomId, sendThing],
+  );
+  useEffect(() => {
+    closed.current = false;
+    let timer: number;
+    const connect = () => {
+      setState(attempts.current ? "reconnecting" : "connecting");
+      const current = latest.current,
+        socket = new WebSocket(
+          socketUrl(
+            current.roomId,
+            participantRef.current,
+            current.name,
+            current.character,
+          ),
+          [`wikitop.${credentialRef.current}`],
+        );
+      ws.current = socket;
+      socket.onmessage = (e) => {
+        try {
+          const parsed = PlayServerMessageSchema.parse(JSON.parse(e.data));
+          void receive(parsed);
+        } catch {
+          setError("Room sent an invalid update");
+        }
+      };
+      socket.onclose = (e) => {
+        if (closed.current) return;
+        if (e.code === 1001) {
+          setState("expired");
+          return;
+        }
+        setState("reconnecting");
+        timer = window.setTimeout(
+          connect,
+          Math.min(10000, 500 * 2 ** attempts.current++),
+        );
+      };
+      socket.onerror = () => setState("unavailable");
+    };
+    connect();
+    return () => {
+      closed.current = true;
+      clearTimeout(timer);
+      ws.current?.close();
+    };
+  }, [options.roomId]);
+  const requestThing = useCallback(
+    (ownerId: string, thingId: string) =>
+      new Promise<ArrayBuffer>((resolve, reject) => {
+        const requestId = `request_${crypto.randomUUID()}`;
+        receivers.current.set(requestId, resolve);
+        if (!rawSend({ type: "thing-request", requestId, ownerId, thingId })) {
+          receivers.current.delete(requestId);
+          reject(new Error("Room is offline"));
+          return;
+        }
+        window.setTimeout(() => {
+          if (receivers.current.delete(requestId))
+            reject(new Error("Thing source did not respond"));
+        }, 15000);
+      }),
+    [rawSend],
+  );
+  return {
+    snapshot,
+    participantId,
+    state,
+    error,
+    setError,
+    cursors,
+    command,
+    rawSend,
+    requestThing,
+  };
 }

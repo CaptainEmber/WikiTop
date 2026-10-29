@@ -28,6 +28,12 @@ The Pages workflow validates and deploys `app/dist` from `main`. Select **GitHub
 
 Each Thing is limited to 25 MiB and editor media to 10 MiB. Keep a starter world below 250 MiB. Git LFS is absent because Pages does not publish LFS objects. Links resolve by stable Thing ID inside one repository. Chat, voice, persistent campaigns, and direct GitHub writes are deferred.
 
+## Private adventure preparation
+
+Copyrighted adventure sources belong under `adventures/<slug>/source/`; normalized manifests and generated GLBs use the sibling `manifest/` and `generated/` directories. All three are ignored by Git. `npm run generate:adventure -- murkmire-malevolence` validates the local inputs and generates a collection of portable Things. In **My Things**, choose **Open GLB collection** and select every generated GLB; WikiTop saves the collection to IndexedDB and opens its adventure root.
+
+The public `world/srd/` library contains only reusable SRD-attributed creature templates and original WikiTop tokens. Private adventure packs may link to those public templates. In Live Play, the host can right-click-move placed Things and track resources, conditions, or temporary visibility. Those instance overlays expire with the room.
+
 ## Live play service
 
 `services/room-worker` is an optional Cloudflare Worker with one SQLite-backed Durable Object per room. It uses hibernating WebSockets for authoritative movement, travel, host roles, and drawing. Rooms use random guest and reconnect secrets rather than accounts.

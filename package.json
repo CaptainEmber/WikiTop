@@ -8,6 +8,8 @@
     "build": "pnpm catalog && pnpm --filter @wikitop/thing-format build && pnpm --filter @wikitop/play-protocol build && pnpm --filter @wikitop/room-worker build && pnpm --filter @wikitop/app build",
     "preview": "pnpm --filter @wikitop/app preview",
     "catalog": "tsx tools/catalog.ts",
+    "generate:srd": "tsx tools/generate-srd.ts",
+    "generate:adventure": "tsx tools/generate-adventure.ts",
     "validate": "tsx tools/validate-world.ts",
     "diff:things": "tsx tools/semantic-diff.ts",
     "typecheck": "pnpm -r typecheck",

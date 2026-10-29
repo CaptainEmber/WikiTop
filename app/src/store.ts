@@ -1,10 +1,104 @@
 import type { EmbeddedMedia, ThingDocument } from "@wikitop/thing-format";
-export interface LocalDraft { id:string; name:string; updatedAt:number; document:ThingDocument }
-const DB="wikitop-things",VERSION=2;
-const database=()=>new Promise<IDBDatabase>((resolve,reject)=>{const r=indexedDB.open(DB,VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("drafts"))db.createObjectStore("drafts",{keyPath:"id"});if(!db.objectStoreNames.contains("media"))db.createObjectStore("media",{keyPath:"key"});};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
-const request=<T>(r:IDBRequest<T>)=>new Promise<T>((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
-const done=(tx:IDBTransaction)=>new Promise<void>((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});
-export async function listDrafts(){const db=await database(),tx=db.transaction("drafts","readonly"),rows=await request<LocalDraft[]>(tx.objectStore("drafts").getAll());db.close();return rows.sort((a,b)=>b.updatedAt-a.updatedAt);}
-export async function loadDraft(id:string){const db=await database(),tx=db.transaction(["drafts","media"],"readonly"),draft=await request<LocalDraft|undefined>(tx.objectStore("drafts").get(id)),rows=await request<any[]>(tx.objectStore("media").getAll(IDBKeyRange.bound(`${id}:`,`${id}:\uffff`)));await done(tx);db.close();return draft?{draft,media:new Map<string,EmbeddedMedia>(rows.map(r=>[r.id,{id:r.id,mimeType:r.mimeType,bytes:new Uint8Array(r.bytes)}]))}:undefined;}
-export async function saveDraft(document:ThingDocument,media:Map<string,EmbeddedMedia>){const db=await database(),tx=db.transaction(["drafts","media"],"readwrite"),id=document.thing.id;tx.objectStore("drafts").put({id,name:document.thing.name,updatedAt:Date.now(),document:structuredClone(document)} satisfies LocalDraft);const store=tx.objectStore("media"),range=IDBKeyRange.bound(`${id}:`,`${id}:\uffff`),keys=await request<IDBValidKey[]>(store.getAllKeys(range));keys.forEach(k=>store.delete(k));for(const m of media.values())store.put({key:`${id}:${m.id}`,id:m.id,mimeType:m.mimeType,bytes:m.bytes.slice().buffer});await done(tx);db.close();}
-export async function deleteDraft(id:string){const db=await database(),tx=db.transaction(["drafts","media"],"readwrite");tx.objectStore("drafts").delete(id);const store=tx.objectStore("media"),keys=await request<IDBValidKey[]>(store.getAllKeys(IDBKeyRange.bound(`${id}:`,`${id}:\uffff`)));keys.forEach(k=>store.delete(k));await done(tx);db.close();}
+export interface LocalDraft {
+  id: string;
+  name: string;
+  updatedAt: number;
+  document: ThingDocument;
+}
+const DB = "wikitop-things",
+  VERSION = 2;
+const database = () =>
+  new Promise<IDBDatabase>((resolve, reject) => {
+    const r = indexedDB.open(DB, VERSION);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains("drafts"))
+        db.createObjectStore("drafts", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("media"))
+        db.createObjectStore("media", { keyPath: "key" });
+    };
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+const request = <T>(r: IDBRequest<T>) =>
+  new Promise<T>((resolve, reject) => {
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+const done = (tx: IDBTransaction) =>
+  new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+export async function listDrafts() {
+  const db = await database(),
+    tx = db.transaction("drafts", "readonly"),
+    rows = await request<LocalDraft[]>(tx.objectStore("drafts").getAll());
+  db.close();
+  return rows.sort((a, b) => b.updatedAt - a.updatedAt);
+}
+export async function loadDraft(id: string) {
+  const db = await database(),
+    tx = db.transaction(["drafts", "media"], "readonly"),
+    draft = await request<LocalDraft | undefined>(
+      tx.objectStore("drafts").get(id),
+    ),
+    rows = await request<any[]>(
+      tx
+        .objectStore("media")
+        .getAll(IDBKeyRange.bound(`${id}:`, `${id}:\uffff`)),
+    );
+  await done(tx);
+  db.close();
+  return draft
+    ? {
+        draft,
+        media: new Map<string, EmbeddedMedia>(
+          rows.map((r) => [
+            r.id,
+            { id: r.id, mimeType: r.mimeType, bytes: new Uint8Array(r.bytes) },
+          ]),
+        ),
+      }
+    : undefined;
+}
+export async function saveDraft(
+  document: ThingDocument,
+  media: Map<string, EmbeddedMedia>,
+) {
+  const db = await database(),
+    tx = db.transaction(["drafts", "media"], "readwrite"),
+    id = document.thing.id;
+  tx.objectStore("drafts").put({
+    id,
+    name: document.thing.name,
+    updatedAt: Date.now(),
+    document: structuredClone(document),
+  } satisfies LocalDraft);
+  const store = tx.objectStore("media"),
+    range = IDBKeyRange.bound(`${id}:`, `${id}:\uffff`),
+    keys = await request<IDBValidKey[]>(store.getAllKeys(range));
+  keys.forEach((k) => store.delete(k));
+  for (const m of media.values())
+    store.put({
+      key: `${id}:${m.id}`,
+      id: m.id,
+      mimeType: m.mimeType,
+      bytes: m.bytes.slice().buffer,
+    });
+  await done(tx);
+  db.close();
+}
+export async function deleteDraft(id: string) {
+  const db = await database(),
+    tx = db.transaction(["drafts", "media"], "readwrite");
+  tx.objectStore("drafts").delete(id);
+  const store = tx.objectStore("media"),
+    keys = await request<IDBValidKey[]>(
+      store.getAllKeys(IDBKeyRange.bound(`${id}:`, `${id}:\uffff`)),
+    );
+  keys.forEach((k) => store.delete(k));
+  await done(tx);
+  db.close();
+}

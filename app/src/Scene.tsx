@@ -1,6 +1,6 @@
 import DrawingLayer, { type DrawingInteraction } from "./DrawingLayer";
 import { useSafeTexture, useSafeModel, MediaBoundary } from "./mediaResources";
-import { Suspense, useRef, useEffect } from "react";
+import { Suspense, useRef, useEffect, useMemo } from "react";
 import {
   Canvas,
   useFrame,
@@ -23,6 +23,8 @@ import {
   Plane,
   Vector3,
   MOUSE,
+  CanvasTexture,
+  SRGBColorSpace,
   type Group,
 } from "three";
 import type {
@@ -39,15 +41,49 @@ export function assetUrl(id: string) {
     ? `${import.meta.env.BASE_URL}assets/${id === "sample_model" ? "sample.glb" : `${id}.svg`}`
     : id;
 }
-function Model({ assetId = "sample_model" }: { assetId?: string }) {
+function Model({
+  assetId = "sample_model",
+  ghost = false,
+}: {
+  assetId?: string;
+  ghost?: boolean;
+}) {
   const scene = useSafeModel(assetUrl(assetId));
+  const display = useMemo(() => {
+    const clone = scene.clone(true);
+    if (ghost)
+      clone.traverse((o: any) => {
+        if (o.isMesh) {
+          const materials = Array.isArray(o.material)
+            ? o.material
+            : [o.material];
+          o.material = materials.map((m: any) => {
+            const n = m.clone();
+            n.transparent = true;
+            n.opacity = 0.3;
+            n.depthWrite = false;
+            return n;
+          });
+          if (!Array.isArray(o.material)) o.material = o.material[0];
+        }
+      });
+    return clone;
+  }, [scene, ghost]);
   return (
     <group rotation={[Math.PI / 2, 0, 0]}>
-      <primitive object={scene.clone(true)} />
+      <primitive object={display} />
     </group>
   );
 }
-function ImageShape({ visual: v, map }: { visual: Visual; map: boolean }) {
+function ImageShape({
+  visual: v,
+  map,
+  ghost = false,
+}: {
+  visual: Visual;
+  map: boolean;
+  ghost?: boolean;
+}) {
   const texture = useSafeTexture(assetUrl(v.assetId!));
   const flat = v.mode === "token" || v.mode === "map" || map;
   const mesh = (
@@ -73,12 +109,49 @@ function ImageShape({ visual: v, map }: { visual: Visual; map: boolean }) {
         map={texture}
         // Maps render in the opaque pass so transparent tokens draw over them.
         transparent={v.mode !== "map"}
+        opacity={ghost ? 0.3 : 1}
         side={DoubleSide}
         depthWrite={v.mode === "map"}
       />
     </mesh>
   );
   return v.mode === "billboard" && !map ? <Billboard>{mesh}</Billboard> : mesh;
+}
+function NameShape({ name, ghost = false }: { name: string; ghost?: boolean }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 128;
+    const c = canvas.getContext("2d")!;
+    c.fillStyle = ghost ? "rgba(40,48,47,.45)" : "rgba(22,29,28,.92)";
+    c.roundRect(4, 4, 504, 120, 20);
+    c.fill();
+    c.strokeStyle = ghost ? "rgba(247,214,140,.45)" : "#d8b878";
+    c.lineWidth = 5;
+    c.stroke();
+    c.fillStyle = ghost ? "rgba(255,255,255,.55)" : "#fff4d6";
+    c.font = "600 42px system-ui,sans-serif";
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillText(name.length > 28 ? `${name.slice(0, 27)}…` : name, 256, 66);
+    const t = new CanvasTexture(canvas);
+    t.colorSpace = SRGBColorSpace;
+    return t;
+  }, [name, ghost]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  const width = Math.min(6, Math.max(1.8, name.length * 0.18));
+  return (
+    <mesh position={[0, 0, 0.085]}>
+      <planeGeometry args={[width, 0.72]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        opacity={ghost ? 0.55 : 1}
+        depthWrite={!ghost}
+        side={DoubleSide}
+      />
+    </mesh>
+  );
 }
 function ThingObject({
   thing: t,
@@ -88,8 +161,10 @@ function ThingObject({
   onDrag,
   editing,
   disabled = false,
+  ghost = false,
 }: {
   disabled?: boolean;
+  ghost?: boolean;
   thing: Thing;
   map: boolean;
   selected?: string;
@@ -162,7 +237,7 @@ function ThingObject({
               </mesh>
             }
           >
-            <Model assetId={v.assetId} />
+            <Model assetId={v.assetId} ghost={ghost} />
           </Suspense>
         ) : v?.assetId ? (
           <Suspense
@@ -173,13 +248,10 @@ function ThingObject({
               </mesh>
             }
           >
-            <ImageShape visual={v} map={map} />
+            <ImageShape visual={v} map={map} ghost={ghost} />
           </Suspense>
         ) : (
-          <mesh position={[0, 0, 0.15]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.35, 0.35, 0.3, 16]} />
-            <meshStandardMaterial color="#af9464" />
-          </mesh>
+          <NameShape name={t.name} ghost={ghost} />
         )}
       </MediaBoundary>
       {selected === t.id && (
@@ -194,7 +266,7 @@ function ThingObject({
           <meshBasicMaterial color="#ffdc8c" side={DoubleSide} />
         </mesh>
       )}
-      {interactive && (
+      {interactive && v && (
         <Html
           position={[0, 0, map ? 0.1 : (v?.height ?? 1) + 0.3]}
           center
@@ -388,6 +460,7 @@ export default function Scene({
   cameraMemory,
   focus = 0,
   focusPosition = [0, 0, 0],
+  showHidden = false,
 }: {
   drawingInteraction?: DrawingInteraction;
   cameraMemory?: {
@@ -407,6 +480,7 @@ export default function Scene({
   editing?: boolean;
   snapshot?: PlaySnapshot;
   onDrawZone?: (start: Vec3, end: Vec3) => void;
+  showHidden?: boolean;
 }) {
   const drawStart = useRef<Vec3>();
   return (
@@ -523,7 +597,10 @@ export default function Scene({
         <meshStandardMaterial color="#242e2c" side={DoubleSide} />
       </mesh>
       {scene.things
-        .filter((t) => interior || t.role === "spatial")
+        .filter(
+          (t) =>
+            (interior || t.role === "spatial") && (!t.hidden || showHidden),
+        )
         .map((t) => (
           <ThingObject
             key={t.id}
@@ -534,6 +611,7 @@ export default function Scene({
             onSelect={drawingInteraction?.active ? () => {} : onSelect}
             onDrag={onDrag}
             editing={editing}
+            ghost={Boolean(t.hidden)}
           />
         ))}
       {scene.zones.map((z) => (

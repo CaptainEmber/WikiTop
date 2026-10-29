@@ -9,4 +9,8 @@ playwright-report/
 test-results/
 coverage/
 .data/
+adventures/*/source/
+adventures/*/manifest/
+adventures/*/generated/
+services/room-worker/.wrangler/
 

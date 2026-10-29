@@ -68,3 +68,5 @@ There is no account database, authentication service, or object store. The optio
 Imports validate GLB structure, schema versions, stable identities, buffer ranges, media signatures and hashes, transforms, complexity, and size before replacing a draft. Export requires every media reference to be embedded. One Thing is limited to 25 MiB and one editor media file to 10 MiB. The starter world should remain below 250 MiB.
 
 Portable files never include ownership, credentials, permissions, private sessions, chat, or character locations. Repository permissions determine who may merge published changes. Existing v1 nested WikiTop files migrate by splitting their tree into separate Thing drafts and replacing containment with placements.
+
+Placements may be hidden for GM presentation. This is convenience visibility rather than secure access control because portable GLBs remain inspectable. Repeated placements of one canonical creature become independent ephemeral instances during live play, allowing a host to move them and track generic resources and conditions without introducing game-rule automation or saving play state into the world.
