@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wikitop-play",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-20",
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "PlayRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PlayRoom"] }],
+  "vars": { "ALLOWED_ORIGINS": "https://captainember.github.io,http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3100" }
+}

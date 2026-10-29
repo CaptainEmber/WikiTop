@@ -44,6 +44,14 @@ The initial collaboration model uses Git:
 
 Keeping one Thing per file reduces binary conflicts and lets contributors work in separate parts of a world. Git cannot merge concurrent edits to the same GLB, so changes should remain focused. Future collaboration may add browser-created branches, direct GitHub writes, simultaneous drawing, presence, parties, and chat without changing the portable Thing contract.
 
+## Ephemeral live play
+
+Live play is a temporary overlay over a pinned Git revision. A host creates a room from a Thing, guests join through an unguessable link, and each participant designates a locally autosaved character Thing. The host leads party travel while players move their own tokens; the host may move any token. Opening a character or linked item changes only the viewer's page and never moves the party.
+
+One Cloudflare Durable Object coordinates each room through hibernating WebSockets. It retains positions, party location, room drawings, roles, command revisions, and reconnect records only until the room has been empty for one hour. Local Thing packages are transferred lazily between participants and are never stored by the room service. The entire reachable character graph is shared with room participants in the first release; private inventory and selective visibility are deferred.
+
+If the host leaves, leadership immediately moves to the longest-connected participant. The current host may transfer the role explicitly. Room movement and drawing never alter Git or a GLB. Character edits use the normal IndexedDB draft path and remain available after play ends.
+
 ## Technology
 
 - TypeScript, React, and Vite for the static application.
@@ -53,7 +61,7 @@ Keeping one Thing per file reduces binary conflicts and lets contributors work i
 - GitHub Pages for hosting and GitHub Actions for validation, catalog generation, semantic diffs, and deployment.
 - Vitest and Playwright for format, migration, build-path, and browser workflows.
 
-There is no production application server, account database, authentication service, or object store. The app never receives a GitHub credential in the first release.
+There is no account database, authentication service, or object store. The optional room coordinator stores only expiring play overlays and the app never receives a GitHub credential.
 
 ## Safety and limits
 

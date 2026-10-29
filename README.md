@@ -4,6 +4,8 @@ WikiTop is a static browser and editor for shared worlds made of **Things**. A T
 
 This repository is both the application and a starter world. GitHub Pages publishes the browser, Git stores the world, forks and branches hold proposed edits, and pull requests are how worlds grow together. The browser keeps working drafts in IndexedDB and exports GLBs; it never asks for a GitHub token.
 
+The optional **Play** service adds temporary multiplayer rooms. Guests join with a secret link, designate a local character Thing, move tokens, follow host-led travel, inspect one another's linked Things, and draw together. Room overlays expire after the room is empty for one hour; character edits continue autosaving only in their owner's browser.
+
 ## Run locally
 
 Requires Node.js 22 and pnpm 10.6.5.
@@ -17,6 +19,8 @@ pnpm dev
 
 Build with `pnpm build` and preview with `pnpm preview`.
 
+For live-play development, run `pnpm --filter @wikitop/room-worker dev`, then start the app with `VITE_PLAY_URL=http://localhost:8787 pnpm dev`.
+
 ## Contribute a Thing
 
 1. Fork and clone the template.
@@ -25,4 +29,4 @@ Build with `pnpm build` and preview with `pnpm preview`.
 4. Run `pnpm validate && pnpm test && pnpm build`.
 5. Commit the GLB and open a pull request.
 
-See [the prototype guide](docs/PROTOTYPE.md), [format reference](docs/FORMAT.md), and [contribution guide](CONTRIBUTING.md). Code uses the [MIT License](LICENSE); designated starter content uses [CC0 1.0](CONTENT-LICENSE).
+See [the prototype guide](docs/PROTOTYPE.md), [format reference](docs/FORMAT.md), [privacy notes](docs/PRIVACY.md), and [contribution guide](CONTRIBUTING.md). Code uses the [MIT License](LICENSE); designated starter content uses [CC0 1.0](CONTENT-LICENSE).

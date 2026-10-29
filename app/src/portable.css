@@ -29,3 +29,20 @@
 .portable-layout-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
 .portable-layout-row button { width: auto; padding: 3px 8px; }
 @media (max-width: 900px) { .portable-header { align-items: flex-start; flex-wrap: wrap; } .portable-header .save-state { margin-left: 0; } }
+.top-tabs { position: fixed; z-index: 30; inset: 0 0 auto 0; height: 48px; display: flex; justify-content: center; gap: 6px; padding: 7px; border-bottom: 1px solid var(--border); background: rgba(20,27,29,.96); backdrop-filter: blur(10px); }
+.top-tabs button { min-width: 110px; border-color: transparent; background: transparent; }
+.top-tabs button.active { color: var(--gold); border-color: var(--gold); background: #2c3535; }
+.with-top-tabs { padding-top: 48px; min-height: 100vh; }
+.thing-card.selected { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(223,180,104,.2); }
+.thing-card-grid.compact .thing-card { min-height: 100px; }
+.play-setup { max-width: 900px; }
+.play-setup > label { display: block; max-width: 500px; margin: 18px 0; }
+.play-room { height: calc(100vh - 48px); }
+.participant-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px; align-items: center; padding: 7px; border-radius: 7px; }
+.participant-row.selected { background: #32413e; }
+.participant-row button { text-align: left; }
+.participant-row button:last-child { grid-column: 1 / -1; }
+.play-link { display: flex; gap: 5px; margin: 5px 0; }
+.play-link button:first-child { flex: 1; text-align: left; }
+.invite-field { max-width: 230px; font-size: 10px; color: var(--muted); }
+.invite-field input { padding: 5px; font-size: 10px; }

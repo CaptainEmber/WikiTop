@@ -28,6 +28,7 @@ jobs:
         run: pnpm build
         env:
           WIKITOP_BASE: /${{ github.event.repository.name }}/
+          VITE_PLAY_URL: ${{ vars.VITE_PLAY_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with: { path: app/dist }

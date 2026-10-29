@@ -5,17 +5,19 @@
   "packageManager": "pnpm@10.6.5",
   "scripts": {
     "dev": "pnpm --filter @wikitop/app dev",
-    "build": "pnpm catalog && pnpm --filter @wikitop/thing-format build && pnpm --filter @wikitop/app build",
+    "build": "pnpm catalog && pnpm --filter @wikitop/thing-format build && pnpm --filter @wikitop/play-protocol build && pnpm --filter @wikitop/room-worker build && pnpm --filter @wikitop/app build",
     "preview": "pnpm --filter @wikitop/app preview",
     "catalog": "tsx tools/catalog.ts",
     "validate": "tsx tools/validate-world.ts",
     "diff:things": "tsx tools/semantic-diff.ts",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:live": "LIVE_E2E=true playwright test --config playwright.live.config.ts"
   },
   "devDependencies": {
     "@wikitop/thing-format": "workspace:*",
+    "@wikitop/play-protocol": "workspace:*",
     "@playwright/test": "1.51.1",
     "@types/node": "22.13.10",
     "prettier": "3.5.3",

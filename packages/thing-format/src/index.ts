@@ -67,7 +67,7 @@ export type ThingId = string;
 export interface EmbeddedMedia { id: string; mimeType: "image/png" | "image/jpeg" | "image/webp" | "model/gltf-binary"; bytes: Uint8Array }
 export type PortableMedia = EmbeddedMedia;
 export interface ThingCatalogEntry { id: string; name: string; description: string; tags: string[]; kind: ThingDefinition["kind"]; path: string; sha256: string; byteLength: number; links: string[] }
-export interface ThingCatalog { version: 1; generatedAt: string; things: ThingCatalogEntry[] }
+export interface ThingCatalog { version: 1; generatedAt: string; source: { repository:string; commit:string; rawBase:string }; things: ThingCatalogEntry[] }
 
 export interface Thing { id: string; name: string; description: string; role: "spatial" | "inventory" | "attribute" | "structure"; position: Vec3; rotation: [number, number, number, number]; scale: Vec3; visual?: Visual; value?: string | number | boolean | null; children: Thing[] }
 export interface AreaScene { schemaVersion: 2; revision: number; width: number; depth: number; drawing?: Drawing; zones: z.infer<typeof ZoneSchema>[]; doors: z.infer<typeof EndpointSchema>[]; anchors: z.infer<typeof EndpointSchema>[]; things: Thing[] }
