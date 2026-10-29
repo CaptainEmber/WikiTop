@@ -5,3 +5,5 @@ To the extent possible under law, contributors waive copyright and related or ne
 This does not apply to software, trademarks, or third-party content carrying its own notice.
 
 Creature rules content under `world/srd/` is derived from the System Reference Document 5.1 under CC BY 4.0, not CC0. See `world/srd/LICENSE.md` for attribution. Original WikiTop token artwork embedded in those files is CC0.
+
+The planar framework and terminology under `world/planes/` are adapted from the System Reference Document 5.1 under CC BY 4.0. The concise descriptions are original WikiTop summaries. See `world/planes/LICENSE.md`.

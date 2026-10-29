@@ -34,6 +34,8 @@ Copyrighted adventure sources belong under `adventures/<slug>/source/`; normaliz
 
 The public `world/srd/` library contains only reusable SRD-attributed creature templates and original WikiTop tokens. Private adventure packs may link to those public templates. In Live Play, the host can right-click-move placed Things and track resources, conditions, or temporary visibility. Those instance overlays expire with the room.
 
+The public `world/planes/` collection begins at `planar-system` and links through the Material Plane, its Feywild and Shadowfell echoes, Inner and Outer Plane indexes, and the Astral and Ethereal transitive planes. Plane entries intentionally use concise original summaries and name-only map labels so contributors can extend them with their own realms and artwork.
+
 ## Live play service
 
 `services/room-worker` is an optional Cloudflare Worker with one SQLite-backed Durable Object per room. It uses hibernating WebSockets for authoritative movement, travel, host roles, and drawing. Rooms use random guest and reconnect secrets rather than accounts.

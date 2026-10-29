@@ -44,3 +44,14 @@ test("imports a collection of linked GLB Things into local drafts",async({page})
   await page.getByRole("button",{name:"Open example-sword"}).click();
   await expect(page.getByRole("heading",{name:"Plain Sword",exact:true,level:2})).toBeVisible();
 });
+
+test("navigates the public planar system into the Nine Hells",async({page})=>{
+  await page.goto("/");
+  await page.getByRole("button",{name:/The Planar System/}).click();
+  await expect(page.getByRole("heading",{name:"The Planar System",exact:true,level:2})).toBeVisible();
+  await page.getByRole("button",{name:"Open planes-outer"}).click();
+  await expect(page.getByRole("heading",{name:"Outer Planes",exact:true,level:2})).toBeVisible();
+  await page.getByRole("button",{name:"Open plane-nine-hells"}).click();
+  await expect(page.getByRole("heading",{name:"The Nine Hells",exact:true,level:2})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Open hell-nessus"})).toBeVisible();
+});
