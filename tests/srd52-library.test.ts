@@ -17,12 +17,12 @@ describe("SRD 5.2.1 libraries", () => {
     const monsters = await readdir("world/srd-5.2/monsters");
     const equipment = await readdir("world/srd-5.2/equipment");
     expect(monsters.filter((name) => name.endsWith(".glb"))).toHaveLength(328);
-    expect(equipment.filter((name) => name.endsWith(".glb"))).toHaveLength(161);
+    expect(equipment.filter((name) => name.endsWith(".glb"))).toHaveLength(179);
 
     const monsterLibrary = await load("world/srd-5.2/srd52-monster-library.glb");
     const equipmentLibrary = await load("world/srd-5.2/srd52-equipment-library.glb");
     expect(monsterLibrary.thing.page.placements).toHaveLength(328);
-    expect(equipmentLibrary.thing.page.placements).toHaveLength(161);
+    expect(equipmentLibrary.thing.page.placements).toHaveLength(179);
   });
 
   it("preserves representative structured rules fields", async () => {

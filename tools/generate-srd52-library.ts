@@ -203,9 +203,18 @@ for (const line of gearTable.split("\n")) {
     if (row && !/^(Item|Adventuring Gear)$/.test(row[1].trim())) addEquipment({ name: row[1].trim(), category: "Adventuring Gear", fields: { Weight: row[2].trim(), Cost: row[3] } });
   }
 }
-for (const match of equipmentText.matchAll(/^\s*([A-Z][A-Za-z’' -]+(?:Tools|Supplies|Utensils|Kit|Instrument|Set)) \(([^)]+)\)\s*$/gm)) {
-  addEquipment({ name: match[1].trim(), category: "Tool", fields: { Cost: match[2] } });
-}
+const tools: [string, string][] = [
+  ["Alchemist’s Supplies", "50 GP"], ["Brewer’s Supplies", "20 GP"], ["Calligrapher’s Supplies", "10 GP"],
+  ["Carpenter’s Tools", "8 GP"], ["Cartographer’s Tools", "15 GP"], ["Cobbler’s Tools", "5 GP"],
+  ["Cook’s Utensils", "1 GP"], ["Glassblower’s Tools", "30 GP"], ["Jeweler’s Tools", "25 GP"],
+  ["Leatherworker’s Tools", "5 GP"], ["Mason’s Tools", "10 GP"], ["Painter’s Supplies", "10 GP"],
+  ["Potter’s Tools", "10 GP"], ["Smith’s Tools", "20 GP"], ["Tinker’s Tools", "50 GP"],
+  ["Weaver’s Tools", "1 GP"], ["Woodcarver’s Tools", "1 GP"], ["Disguise Kit", "25 GP"],
+  ["Forgery Kit", "15 GP"], ["Gaming Set", "Varies"], ["Herbalism Kit", "5 GP"],
+  ["Musical Instrument", "Varies"], ["Navigator’s Tools", "25 GP"], ["Poisoner’s Kit", "50 GP"],
+  ["Thieves’ Tools", "25 GP"],
+];
+for (const [name, cost] of tools) addEquipment({ name, category: "Tool", fields: { Cost: cost } });
 const mountsAndVehicles: Equipment[] = [
   ["Camel", "Mount", "450 lb.", "50 GP"], ["Elephant", "Mount", "1,320 lb.", "200 GP"],
   ["Horse, Draft", "Mount", "540 lb.", "50 GP"], ["Horse, Riding", "Mount", "480 lb.", "75 GP"],
