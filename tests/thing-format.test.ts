@@ -102,6 +102,7 @@ const fixture = (): ThingDocument =>
             rotation: [0, 0, 0, 1],
             scale: [1, 1, 1],
             hidden: true,
+            partyExit: { anchorId: "entrance" },
           },
         ],
       },
@@ -227,5 +228,26 @@ describe("Thing GLB format", () => {
     expect(
       parsed.thing.page.placements.every((p) => p.targetId === "bag"),
     ).toBe(true);
+  });
+  it("keeps legacy placements non-travelable by default", () => {
+    const placement = ThingDocumentSchema.parse({
+      ...fixture(),
+      thing: {
+        ...fixture().thing,
+        page: {
+          ...fixture().thing.page,
+          placements: [
+            {
+              id: "ordinary-link",
+              targetId: "bag",
+              position: [0, 0, 0],
+              rotation: [0, 0, 0, 1],
+              scale: [1, 1, 1],
+            },
+          ],
+        },
+      },
+    });
+    expect(placement.thing.page.placements[0].partyExit).toBeUndefined();
   });
 });

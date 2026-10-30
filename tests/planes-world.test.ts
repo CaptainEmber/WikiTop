@@ -28,6 +28,7 @@ describe("public planar system", () => {
       ]),
     );
     expect(Object.keys(root.thing.face.media)).toHaveLength(0);
+    expect(root.thing.page.placements.every((p) => p.partyExit)).toBe(true);
   });
   it("contains the elemental and energy planes", async () => {
     const inner = await load("planes-inner"),

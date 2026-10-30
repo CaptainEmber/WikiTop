@@ -58,6 +58,7 @@ const at = (
   position: [x, y, 0],
   rotation: [0, 0, 0, 1],
   scale: [1, 1, 1],
+  partyExit: {},
 });
 const ring = (ids: string[], radius = 10) =>
   ids.map((targetId, i) => {

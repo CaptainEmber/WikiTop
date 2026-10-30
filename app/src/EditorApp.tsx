@@ -85,7 +85,7 @@ function placementThing(
   const target = catalog.get(p.targetId);
   return {
     id: p.id,
-    name: p.name ?? target?.name ?? `Missing: ${p.targetId}`,
+    name: `${p.partyExit ? "⇥ " : ""}${p.name ?? target?.name ?? `Missing: ${p.targetId}`}`,
     description: target?.description ?? "This link has no published target.",
     role: "spatial",
     position: p.position,
@@ -95,6 +95,212 @@ function placementThing(
     hidden: p.hidden,
     children: [],
   };
+}
+type PlacementChoice = {
+  id: string;
+  name: string;
+  description: string;
+  kind: ThingDocument["thing"]["kind"];
+  tags: string[];
+  source: "published" | "local";
+};
+function AddThingDialog({
+  catalog,
+  onPlace,
+  onCreate,
+  onClose,
+}: {
+  catalog: Map<string, ThingCatalogEntry>;
+  onPlace: (id: string) => void;
+  onCreate: (name: string, kind: ThingDocument["thing"]["kind"]) => void;
+  onClose: () => void;
+}) {
+  const [drafts, setDrafts] = useState<LocalDraft[]>([]),
+    [query, setQuery] = useState(""),
+    [source, setSource] = useState<"all" | "published" | "local">("all"),
+    [kind, setKind] = useState("all"),
+    [tag, setTag] = useState("all"),
+    [creating, setCreating] = useState(false),
+    [newName, setNewName] = useState(""),
+    [newKind, setNewKind] = useState<ThingDocument["thing"]["kind"]>("place");
+  useEffect(() => {
+    void listDrafts().then(setDrafts);
+  }, []);
+  const choices = useMemo(() => {
+      const values: PlacementChoice[] = [];
+      for (const entry of catalog.values())
+        values.push({
+          id: entry.id,
+          name: entry.name,
+          description: entry.description,
+          kind: entry.kind,
+          tags: entry.tags,
+          source: "published",
+        });
+      for (const draft of drafts)
+        values.push({
+          id: draft.id,
+          name: draft.name,
+          description: draft.document.thing.description,
+          kind: draft.document.thing.kind,
+          tags: draft.document.thing.tags ?? [],
+          source: "local",
+        });
+      return values.sort(
+        (a, b) =>
+          a.name.localeCompare(b.name) || a.source.localeCompare(b.source),
+      );
+    }, [catalog, drafts]),
+    tags = [...new Set(choices.flatMap((choice) => choice.tags))].sort(),
+    shown = choices.filter((choice) => {
+      const haystack =
+        `${choice.name} ${choice.id} ${choice.description} ${choice.kind} ${choice.tags.join(" ")}`.toLowerCase();
+      return (
+        haystack.includes(query.toLowerCase()) &&
+        (source === "all" || choice.source === source) &&
+        (kind === "all" || choice.kind === kind) &&
+        (tag === "all" || choice.tags.includes(tag))
+      );
+    });
+  return (
+    <div className="thing-picker-backdrop" onMouseDown={onClose}>
+      <dialog
+        className="thing-picker"
+        open
+        aria-modal="true"
+        onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
+      >
+        <header>
+          <div>
+            <p className="eyebrow">LINK ANOTHER PAGE</p>
+            <h2>Add Thing</h2>
+          </div>
+          <button aria-label="Close Add Thing" onClick={onClose}>
+            ×
+          </button>
+        </header>
+        {creating ? (
+          <section className="thing-create-form">
+            <label>
+              Name
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </label>
+            <label>
+              Kind
+              <select
+                value={newKind}
+                onChange={(e) => setNewKind(e.target.value as typeof newKind)}
+              >
+                {[
+                  "place",
+                  "character",
+                  "item",
+                  "vehicle",
+                  "creature",
+                  "object",
+                  "other",
+                ].map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+            <div className="actions">
+              <button onClick={() => setCreating(false)}>Back</button>
+              <button
+                className="primary"
+                disabled={!newName.trim()}
+                onClick={() => onCreate(newName.trim(), newKind)}
+              >
+                Create, place, and open
+              </button>
+            </div>
+          </section>
+        ) : (
+          <>
+            <div className="thing-picker-filters">
+              <label className="search">
+                Search
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="guard, sword, tavern…"
+                />
+              </label>
+              <label>
+                Source
+                <select
+                  value={source}
+                  onChange={(e) => setSource(e.target.value as typeof source)}
+                >
+                  <option value="all">All</option>
+                  <option value="published">Published World</option>
+                  <option value="local">My Things</option>
+                </select>
+              </label>
+              <label>
+                Kind
+                <select value={kind} onChange={(e) => setKind(e.target.value)}>
+                  <option value="all">All kinds</option>
+                  {[
+                    "place",
+                    "character",
+                    "item",
+                    "vehicle",
+                    "creature",
+                    "object",
+                    "other",
+                  ].map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Tag
+                <select value={tag} onChange={(e) => setTag(e.target.value)}>
+                  <option value="all">All tags</option>
+                  {tags.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <button className="primary" onClick={() => setCreating(true)}>
+              ＋ Create new linked Thing
+            </button>
+            <section className="thing-card-grid compact thing-picker-results">
+              {shown.map((choice) => (
+                <button
+                  className="thing-card"
+                  key={`${choice.source}:${choice.id}`}
+                  onClick={() => onPlace(choice.id)}
+                >
+                  <p className="eyebrow">
+                    {choice.source === "local" ? "MY THING" : "PUBLISHED"} ·{" "}
+                    {choice.kind}
+                  </p>
+                  <h3>{choice.name}</h3>
+                  <p>{choice.description || "No description yet."}</p>
+                  <small>{choice.id}</small>
+                  <span>
+                    {choice.tags.map((value) => `#${value}`).join(" ")}
+                  </span>
+                </button>
+              ))}
+              {!shown.length && <p>No Things match these filters.</p>}
+            </section>
+          </>
+        )}
+      </dialog>
+    </div>
+  );
 }
 function Home({
   openDraft,
@@ -223,6 +429,7 @@ export default function EditorApp({
   const [doc, setDoc] = useState<ThingDocument>(),
     [media, setMedia] = useState(new Map<string, EmbeddedMedia>()),
     [catalog, setCatalog] = useState(new Map<string, ThingCatalogEntry>()),
+    [draftIndex, setDraftIndex] = useState(new Map<string, LocalDraft>()),
     [selected, setSelected] = useState(""),
     [history, setHistory] = useState<
       { doc: ThingDocument; media: Map<string, EmbeddedMedia> }[]
@@ -237,6 +444,7 @@ export default function EditorApp({
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [color, setColor] = useState("#f0b55a"),
     [width, setWidth] = useState(0.12);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const file = useRef<HTMLInputElement>(null),
     mediaFile = useRef<HTMLInputElement>(null),
     latest = useRef(doc);
@@ -248,6 +456,9 @@ export default function EditorApp({
         setCatalog(new Map(c.things.map((t) => [t.id, t]))),
       )
       .catch(() => {});
+    void listDrafts().then((drafts) =>
+      setDraftIndex(new Map(drafts.map((draft) => [draft.id, draft]))),
+    );
   }, []);
   useEffect(() => {
     if (!doc || !dirty) return;
@@ -488,9 +699,7 @@ export default function EditorApp({
             }),
         }
       : undefined;
-  const addPlacement = () => {
-    const target = prompt("Stable Thing ID to place or create:", id("thing"));
-    if (!target) return;
+  const addPlacement = (target: string) => {
     const pid = id("placement");
     change((d) =>
       d.thing.page.placements.push({
@@ -502,6 +711,57 @@ export default function EditorApp({
       }),
     );
     setSelected(pid);
+    setPickerOpen(false);
+  };
+  const createLinkedThing = async (
+    name: string,
+    kind: ThingDocument["thing"]["kind"],
+  ) => {
+    if (!doc) return;
+    const thingId = `${slug(name).toLowerCase()}-${crypto.randomUUID().slice(0, 8)}`,
+      child = blank(name, thingId);
+    child.thing.kind = kind;
+    const parent = structuredClone(doc),
+      pid = id("placement");
+    parent.thing.page.placements.push({
+      id: pid,
+      targetId: thingId,
+      name,
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      scale: [1, 1, 1],
+    });
+    try {
+      const parsedParent = ThingDocumentSchema.parse(parent),
+        parsedChild = ThingDocumentSchema.parse(child);
+      await saveDraft(parsedParent, media);
+      await saveDraft(parsedChild, new Map());
+      setDraftIndex((current) =>
+        new Map(current)
+          .set(parsedParent.thing.id, {
+            id: parsedParent.thing.id,
+            name: parsedParent.thing.name,
+            updatedAt: Date.now(),
+            document: parsedParent,
+          })
+          .set(parsedChild.thing.id, {
+            id: parsedChild.thing.id,
+            name: parsedChild.thing.name,
+            updatedAt: Date.now(),
+            document: parsedChild,
+          }),
+      );
+      setHistory((items) => [...items, { doc: parsedParent, media }]);
+      setDoc(parsedChild);
+      setMedia(new Map());
+      setSelected("");
+      setEditing(true);
+      setDirty(false);
+      setStatus("Created and saved locally");
+      setPickerOpen(false);
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
   const addMedia = async (
     slot: "token" | "artwork" | "model" | "background",
@@ -547,6 +807,12 @@ export default function EditorApp({
     }
   };
   const visiblePlacements = p.placements.filter((x) => editing || !x.hidden);
+  const destinationAnchors = selectedPlacement
+    ? (draftIndex.get(selectedPlacement.targetId)?.document.thing.page
+        .anchors ??
+      catalog.get(selectedPlacement.targetId)?.anchors ??
+      [])
+    : [];
   return (
     <main className="workspace portable-workspace">
       <header className="portable-header">
@@ -620,7 +886,7 @@ export default function EditorApp({
         <div className="actions">
           {editing && (
             <>
-              <button onClick={addPlacement}>＋ Place Thing</button>
+              <button onClick={() => setPickerOpen(true)}>＋ Add Thing</button>
               <button
                 className={draw ? "active" : ""}
                 onClick={() => setDraw((v) => !v)}
@@ -655,6 +921,14 @@ export default function EditorApp({
           )}
         </div>
       </div>
+      {pickerOpen && (
+        <AddThingDialog
+          catalog={catalog}
+          onPlace={addPlacement}
+          onCreate={(name, kind) => void createLinkedThing(name, kind)}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
       <div className="workspace-grid">
         <aside className="panel tools">
           <p className="eyebrow">LINKED THINGS</p>
@@ -666,6 +940,7 @@ export default function EditorApp({
               >
                 <button onClick={() => setSelected(x.id)}>
                   {x.hidden ? "◌ " : ""}
+                  {x.partyExit ? "⇥ " : ""}
                   {catalog.get(x.targetId)?.name ?? x.name ?? x.targetId}
                 </button>
                 <button
@@ -751,6 +1026,7 @@ export default function EditorApp({
                 {visiblePlacements.map((x) => (
                   <li key={x.id}>
                     <button onClick={() => void navigate(x.targetId)}>
+                      {x.partyExit ? "⇥ " : ""}
                       {catalog.get(x.targetId)?.name ?? x.targetId}
                     </button>{" "}
                     · XYZ {x.position.join(", ")}
@@ -765,7 +1041,13 @@ export default function EditorApp({
           )}
         </section>
         <aside className="panel inspector">
-          <h3>{selectedPlacement ? "Placement" : "Thing"}</h3>
+          <h3>
+            {selectedPlacement
+              ? selectedPlacement.partyExit
+                ? "⇥ Party exit"
+                : "Placement"
+              : "Thing"}
+          </h3>
           {selectedPlacement ? (
             <>
               <label>
@@ -812,6 +1094,53 @@ export default function EditorApp({
                 />{" "}
                 Hidden from players
               </label>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={Boolean(selectedPlacement.partyExit)}
+                  onChange={(e) =>
+                    change((d) => {
+                      const placement = d.thing.page.placements.find(
+                        (x) => x.id === selected,
+                      )!;
+                      placement.partyExit = e.target.checked ? {} : undefined;
+                    })
+                  }
+                />
+                Party exit
+              </label>
+              {selectedPlacement.partyExit && (
+                <>
+                  <label>
+                    Arrival anchor
+                    <select
+                      value={selectedPlacement.partyExit.anchorId ?? ""}
+                      disabled={!destinationAnchors.length}
+                      onChange={(e) =>
+                        change((d) => {
+                          d.thing.page.placements.find(
+                            (x) => x.id === selected,
+                          )!.partyExit = {
+                            anchorId: e.target.value || undefined,
+                          };
+                        })
+                      }
+                    >
+                      <option value="">First destination anchor</option>
+                      {destinationAnchors.map((anchor) => (
+                        <option key={anchor.id} value={anchor.id}>
+                          {anchor.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {!destinationAnchors.length && (
+                    <p className="warning">
+                      Destination unavailable or has no usable arrival anchor.
+                    </p>
+                  )}
+                </>
+              )}
               <button onClick={() => void navigate(selectedPlacement.targetId)}>
                 {catalog.has(selectedPlacement.targetId)
                   ? "Open Thing"

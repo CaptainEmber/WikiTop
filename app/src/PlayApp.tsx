@@ -110,7 +110,7 @@ function toThing(
     visible = instance?.visible;
   return {
     id: p.id,
-    name: instance?.name ?? p.name ?? target?.name ?? p.targetId,
+    name: `${p.partyExit ? "⇥ " : ""}${instance?.name ?? p.name ?? target?.name ?? p.targetId}`,
     description: target?.description ?? "",
     role: "spatial",
     position: instance?.position ?? p.position,
@@ -728,8 +728,11 @@ function Room({
             }),
         }
       : undefined;
-  const travel = async (targetId: string) => {
+  const travel = async (placement: ThingPlacement) => {
     try {
+      if (!placement.partyExit)
+        throw new Error("This linked Thing is not marked as a party exit");
+      const targetId = placement.targetId;
       const local =
           room.participantId === room.snapshot?.worldOwnerId
             ? await loadDraft(targetId)
@@ -737,7 +740,16 @@ function Room({
         destination = local
           ? { document: local.draft.document }
           : await publishedThing(catalog, targetId),
-        anchor = destination.document.thing.page.anchors[0];
+        anchors = destination.document.thing.page.anchors,
+        anchor = placement.partyExit.anchorId
+          ? anchors.find((item) => item.id === placement.partyExit?.anchorId)
+          : anchors[0];
+      if (!anchor)
+        throw new Error(
+          placement.partyExit.anchorId
+            ? `Arrival anchor ${placement.partyExit.anchorId} is unavailable`
+            : "The destination has no arrival anchor",
+        );
       room.command({
         type: "travel",
         thingId: targetId,
@@ -1147,14 +1159,15 @@ function Room({
             <div className="play-link" key={p.id}>
               <button onClick={() => selectPlaced(p.id)}>
                 {p.hidden && host ? "◌ " : ""}
+                {p.partyExit ? "⇥ " : ""}
                 {instances[p.id]?.name ??
                   p.name ??
                   catalogMap.get(p.targetId)?.name ??
                   p.targetId}
               </button>
               <button onClick={() => void openTarget(p.targetId)}>Open</button>
-              {host && viewingParty && (
-                <button onClick={() => void travel(p.targetId)}>Travel</button>
+              {host && viewingParty && p.partyExit && (
+                <button onClick={() => void travel(p)}>Travel party</button>
               )}
             </div>
           ))}

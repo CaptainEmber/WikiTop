@@ -38,6 +38,7 @@ const summary = (d?: ThingDocument) =>
           targetId: p.targetId,
           position: p.position,
           hidden: Boolean(p.hidden),
+          partyExit: p.partyExit,
         })),
         strokes: d.thing.page.drawing?.strokes.length ?? 0,
         media: Object.keys(d.thing.face.media).concat(

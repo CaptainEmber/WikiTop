@@ -6,6 +6,8 @@ WikiTop is a Vite application served from a static host. It has no login, databa
 
 Published Things are read-only. **Edit local copy** or **New Thing** starts an IndexedDB draft. Drafts autosave in that browser profile. **Export GLB** is the durable, shareable save operation. Clearing site data removes unexported drafts.
 
+While editing, **Add Thing** searches both the published catalog and local drafts by name, stable ID, description, kind, and tags. A placement can be marked **Party exit** and assigned one of the destination's arrival anchors. Opening any placement changes only your view; in live Play, only marked exits offer the host **Travel party**.
+
 A v2 GLB contains one Thing. Opening an older v1 package splits its tree into one draft per Thing and turns containment into stable-ID placements. An ordinary GLB becomes one Thing with the original model as its 3D face.
 
 ## Commands

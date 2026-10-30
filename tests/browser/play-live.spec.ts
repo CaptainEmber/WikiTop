@@ -37,20 +37,28 @@ test("two guests join, share state, transfer host, enable drawing, and travel", 
   const basement = guest
     .locator(".play-link")
     .filter({ hasText: "Stairs to Basement" });
-  await basement.getByRole("button", { name: "Travel" }).click();
+  await basement.getByRole("button", { name: "Travel party" }).click();
   await expect(host.getByText("PARTY AT Emberheart Basement")).toBeVisible();
   await expect(guest.getByText("PARTY AT Emberheart Basement")).toBeVisible();
-  const bag=guest.locator(".play-link").filter({hasText:"Traveler's Backpack"});
-  await bag.getByRole("button",{name:"Traveler's Backpack"}).click();
-  guest.once("dialog",dialog=>dialog.accept("damaged"));
-  await guest.getByRole("button",{name:"Add condition"}).click();
-  await expect(guest.getByText("damaged",{exact:true})).toBeVisible();
-  const originalHost=guest.locator(".participant-row").filter({hasText:"Host · Mara"});
-  await originalHost.getByRole("button",{name:"Make host"}).click();
-  await expect(host.getByRole("button",{name:"Enable drawing"})).toBeVisible();
-  const remoteBag=host.locator(".play-link").filter({hasText:"Traveler's Backpack"});
-  await remoteBag.getByRole("button",{name:"Traveler's Backpack"}).click();
-  await expect(host.getByText("damaged",{exact:true})).toBeVisible();
+  const bag = guest
+    .locator(".play-link")
+    .filter({ hasText: "Traveler's Backpack" });
+  await bag.getByRole("button", { name: "Traveler's Backpack" }).click();
+  guest.once("dialog", (dialog) => dialog.accept("damaged"));
+  await guest.getByRole("button", { name: "Add condition" }).click();
+  await expect(guest.getByText("damaged", { exact: true })).toBeVisible();
+  const originalHost = guest
+    .locator(".participant-row")
+    .filter({ hasText: "Host · Mara" });
+  await originalHost.getByRole("button", { name: "Make host" }).click();
+  await expect(
+    host.getByRole("button", { name: "Enable drawing" }),
+  ).toBeVisible();
+  const remoteBag = host
+    .locator(".play-link")
+    .filter({ hasText: "Traveler's Backpack" });
+  await remoteBag.getByRole("button", { name: "Traveler's Backpack" }).click();
+  await expect(host.getByText("damaged", { exact: true })).toBeVisible();
   await hostContext.close();
   await guestContext.close();
 });

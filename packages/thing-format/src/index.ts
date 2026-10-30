@@ -202,6 +202,7 @@ export const ThingPlacementSchema = z
     ),
     face: VisualSchema.optional(),
     hidden: z.boolean().optional(),
+    partyExit: z.object({ anchorId: Id.optional() }).strict().optional(),
   })
   .strict();
 export type ThingPlacement = z.infer<typeof ThingPlacementSchema>;
@@ -282,6 +283,7 @@ export interface ThingCatalogEntry {
   sha256: string;
   byteLength: number;
   links: string[];
+  anchors: Array<{ id: string; name: string; position: Vec3 }>;
 }
 export interface ThingCatalog {
   version: 1;
